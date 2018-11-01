@@ -11,7 +11,8 @@ from wtforms import StringField # Note that you may need to import more here! Ch
 from wtforms.validators import Required # Here, too
 from flask_sqlalchemy import SQLAlchemy
 import requests
-import json 
+import json
+import secrets
 
 ## App setup code
 app = Flask(__name__)
