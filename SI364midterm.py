@@ -10,6 +10,8 @@ from flask_wtf import FlaskForm
 from wtforms import StringField # Note that you may need to import more here! Check out examples that do what you want to figure out what.
 from wtforms.validators import Required # Here, too
 from flask_sqlalchemy import SQLAlchemy
+import requests
+import json 
 
 ## App setup code
 app = Flask(__name__)
