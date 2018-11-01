@@ -3,37 +3,6 @@
 ### Deadline: November 4, 2018 11:59 PM
 ### Total: 2000 points
 
-## Overall
-
-**You do NOT need to fork or clone this, and should not -- only the instructions live here. Everything else we provide lives on Canvas.**
-
-**YOU SHOULD READ THIS ENTIRE SET OF INSTRUCTIONS CAREFULLY BEFORE BEGINNING YOUR WORK.**
-
-In this take-home midterm assignment, your goal is to build on provided code to build a complete working interactive application, using the material you have learned in this class so far:
-
-* Putting correct setup code into your app file
-* Dynamic routes (using data from the URL)
-* Links
-* Building templates with template inheritance
-* Planning and defining view functions to send data to templates
-* Forms with WTForms
-* GET and POST requests
-* Redirects
-* SQLAlchemy and Models
-* And certainly, debugging and more along the way...
-
-## Info on collaboration (none) and work on this assignment
-
-Unlike most HW in this class, you should not share any code you are working on for this assignment. It should be your own work. You may talk generally about concepts ("where's some good documentation for WTForms", "I'm getting this error, what do you suggest I try to do?") but nothing specific (like "can you look at my code and help talk me through it" -- that's great for HW, but not for this practice midterm assignment).
-
-By submitting the assignment you are asserting that you completed this project with academic integrity and did not share your code with others.
-
-You may, of course, talk with any instructors, post (without showing your code) on Piazza (we will monitor and edit any question with too much information in it), and use the internet, any resources from HW, section, or lecture, textbook, readings, etc.
-
-If you use any code from the internet or directly from class, you must cite it. **You CANNOT fulfill _creative_ requirements for this assignment (e.g. defining a complete view function) with any code that comes from lecture, section, the internet, a friend, or a previous assignment,** although if you include it AND cite it (see syllabus for how), that's OK, it just won't count for points.
-
-(Setup code, like `app.config` settings, is always approximately the same and will not vary much from one person to another, if it all. You do not have to cite that, but you do need to make sure you have what you need!)
-
 ## Instructions
 
 We have provided a `.zip` file on Canvas (in the directory **Files > Midterm Assignment**) called `SI364midterm.zip`. This contains the file `SI364midterm.py` that includes some view functions, some models, some setup code, some comments to indicate what you may need to add and how to organize your code, a `templates` directory with 2 templates inside, and a sample `README.md` template. The `SI364midterm.py` file does NOT include all of the setup code necessary for an app to run.
