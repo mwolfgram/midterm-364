@@ -35,8 +35,17 @@ db = SQLAlchemy(app)
 ######################################
 
 #do this after models — your route will likely need a helper function
+def get_or_create_city(city, state, country): #latitude, longitude, country_id1, weather_time, humidity, icon_code, atm_pressure, temp_degc, temp_degf, wind_direct, wind_speed_ms, wind_speed_mph, country_id2, pollution_time, us_aqi, us_main, cn_aqi, cn_main): #make sure this function is only accepting city, state, country -- put this in the view fn before data collection?
+    city = db.session.query(Location).filter_by(city = city).first() #make sure this result translates? what does .first() look like?
+    if city:
+        return True
+    if not city: #else?
+        return False
 
-
+#you only need a helper function for the city — just make sure that the rest of the would-be-new data isn't being added if the city there already
+#do you though? how do you ensure the rest of the new data isn't committed?
+#nvm lol you gotta do two more helper functions bc they get the info in the database
+#either that or a master helper function
 
 ##################
 ##### MODELS #####
@@ -97,19 +106,15 @@ class AirVizPollutionData(db.Model):
 ###################
 
 class CityForm(FlaskForm):
-    city = StringField("enter a city somewhere in the world: ", validators = [Required(), Length(max = 280)])   ## -- text: tweet text (Required, should not be more than 280 characters)
-    state = StringField("enter the state/province of your city: ", validators = [Required(), Length(max = 64)])               ## -- username: the twitter username who should post it (Required, should not be more than 64 characters)
-    country = StringField("enter the country your city is in: ", validators = [Required()])                                             ## -- display_name: the display name of the twitter user with that username (Required, + set up custom validation for this -- see below)
-    submit = SubmitField('remember: capitalism is the biggest reason for air pollution')
+    city = StringField("enter a city somewhere in the US or China: ", validators = [Required(), Length(max = 280)])
+    state = StringField("enter the state/province of your city: ", validators = [Required(), Length(max = 64)])
+    country = StringField("enter the country your city is in (if it's in the united states, you must type 'USA' — if in China, just type 'China'): ", validators = [Required(), Length(max = 3)]) #link to list/page? of A3 codes??
 
     def validate_username(self, field): #making sure no idiot says africa is a country
         result = field.data
         split_display = result.split(' ')
-        if "Africa" in split_display: #***how to isolate the country for this validator?
-            if "South Africa" or "Central African Republic" in split_display: #how does this split end up working?
-                pass
-            else:
-                raise ValidationError("Africa is not a country >:(")
+        if "China" and "United States" not in split_display: #***how to isolate the country for this validator?
+            raise ValidationError("your city must be in either the united states or china!")
 
     def validate_display_name(self, field): #custom validation - the output can't be more than 7 words
         result = field.data
@@ -123,15 +128,97 @@ class CityForm(FlaskForm):
 
 @app.route('/')
 def home():
-    form = CityForm() # User should be able to enter name after name and each one will be saved, even if it's a duplicate! Sends data with GET
-    if form.validate_on_submit():
-        name = form.name.data
-        newname = Name(name)
-        db.session.add(newname)
-        db.session.commit()
-        return redirect(url_for('all_names'))
-    return render_template('base.html',form=form)
+    form = CityForm(request.form) # User should be able to enter name after name and each one will be saved, even if it's a duplicate! Sends data with GET
+    master_list = [] #either make a list to send to helper functions or idk --***make a helper function for duplicate verification?
+    if form.validate_on_submit() and request.method == 'POST':
+
+        #what is this stuff??
+        # if form.validate_on_submit():
+        #     name = form.name.data
+        #     newname = Name(name)
+        #     db.session.add(newname)
+        #     db.session.commit()
+        #     return redirect(url_for('all_names'))
+
+        #.format everything in the link!!
+        city_test = form.city.data #get this stuff from the form
+        state_test = form.state.data
+        country_test = form.country.data
+        #***reroute to list of cities supported in the country?
+        #what happens if the country isn't supported?
+
+        baseurl = "http://api.airvisual.com/v2/city?city={}&state={}&country={}&key={}".format(city_test, state_test, country_test, secrets.api_secret)
+        # print(baseurl)
+
+        #querystring = {"city":"Beijing","state":"Beijing","country":"China","key": "ih759G8bZXogKrbAA"}
+
+        response = requests.get(baseurl) #, params=querystring)
+        data = json.loads(response.text)
+        big_data = data['data']
+
+        ### individual elements from response
+        try:
+            city = big_data['city']         #city name
+            state = big_data['state']       #state name
+            country = big_data['country']   #country
+
+            coor = big_data['location']['coordinates']
+            lat = coor[0]   #latitude
+            long = coor[1]  #longitude
+
+            weather_ts = big_data['current']['weather']['ts']           #timestamp of weather data
+            humidity = int(big_data['current']['weather']['hu'])        #humidity!
+            icon_code = big_data['current']['weather']['ic']            #icon code for pic
+            atm_pressure = int(big_data['current']['weather']['pr'])    #atm pressure in hPa
+            temp_degc = int(big_data['current']['weather']['tp'])       #deg c temp
+            temp_degf = ((temp_degc)*(9/5)) + 32                        #deg f temp
+            wind_direct = int(big_data['current']['weather']['wd'])     #wind direction in deg
+            wind_speed_ms = int(big_data['current']['weather']['ws'])   #wind speed (m/s)
+            wind_speed_mph = (int(wind_speed_ms)*2.237)                 #wind speed (mph)
+
+            pollution_ts = big_data['current']['pollution']['ts']       #timestamp of pollution data
+            usaqi = int(big_data['current']['pollution']['aqius'])      #AQI val from EPA
+            usmain = big_data['current']['pollution']['mainus']         #main pollutant -- see scale!
+            cnaqi = int(big_data['current']['pollution']['aqicn'])      #AQI val from China's MEP standard
+            cnmain = big_data['current']['pollution']['maincn']         #main pollutant from MEP metric
+
+
+            print(data['data'])
+            print('------------------------')
+            print((city, state, country, coor, lat, long, weather_ts, humidity, icon_code, atm_pressure, temp_degc, temp_degf, wind_direct, wind_speed_ms, wind_speed_mph, pollution_ts, usaqi, usmain, cnaqi, cnmain))
+            return(data['data'])
+
+        except: #***TRANSLATE THIS TO HELPER FUNCTION! HOW TO RETURN IT IF IT'S NOT WORKING
+            if data['data']['message']:
+                if data['data']['message'] == 'city_not_found':
+                    print("oops, looks like your city can't be found. try another one!")
+                    return None #flash error message instead?
+                else:
+                    print("oops, there has been an error — try again!")
+                    return None #flash error message instead?
+
+
+    errors = [v for v in form.errors.values()]
+    if len(errors) > 0:
+        flash("!!!! ERRORS IN FORM SUBMISSION - " + str(errors))
+    return render_template('base.html',form=form)#do a url_for here somewhere?
     #***redirect(url_for('index'))
+    if get_or_create_city(city, state, country) == True:
+        pass #are you supposed to be returning data from all three models here now?
+
+    if get_or_create_city(city, state, country) == False:
+
+        city = Location(city = city, state = state, country = country, latitude = latitude, longitude = longitude) #wait is there fkey
+        db.session.add(city)
+        db.session.commit()
+
+        weather = AirVizWeatherData(weather_ts = weather_time, humidity = humidity, icon_code = icon_code, atm_pressure = atm_pressure, temp_degc = temp_degc, temp_degf = temp_degf, wind_direct = wind_direct, wind_speed_ms = wind_speed_ms, wind_speed_mph = wind_speed_mph)
+        db.session.add(weather)
+        db.session.commit()
+
+        pollution = AirVizPollutionData()
+
+# return city ------ move this up a bit in a little
 
 @app.route('/names')
 def all_names():

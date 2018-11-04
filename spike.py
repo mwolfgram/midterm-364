@@ -24,10 +24,16 @@ import secrets
 #       "co": "ppm" //Carbon monoxide CO }
 
 def prelim():
-    baseurl = "http://api.airvisual.com/v2/city?city=Los Angeles&state=California&country=USA&key={}".format(secrets.api_secret)
-    #print(baseurl)
-    #try formatting for every part of the url
-    #
+
+    city_test = "Seatttle"
+    state_test = "Washington"
+    country_test = "USA"  #how does the naming system work?
+    #***reroute to list of cities supported in the country?
+    #what happens if the country isn't supported?
+
+    baseurl = "http://api.airvisual.com/v2/city?city={}&state={}&country={}&key={}".format(city_test, state_test, country_test, secrets.api_secret)
+    # print(baseurl)
+    # wait how do the countries work? does it require a code? radio buttons if it does?
 
     #querystring = {"city":"Beijing","state":"Beijing","country":"China","key": "ih759G8bZXogKrbAA"}
 
@@ -35,36 +41,48 @@ def prelim():
     data = json.loads(response.text)
     big_data = data['data']
 
-    ### individual elements
+    ### individual elements from response
+    try:
+        city = big_data['city']         #city name
+        state = big_data['state']       #state name
+        country = big_data['country']   #country
 
-    city = big_data['city']         #city name
-    state = big_data['state']       #state name
-    country = big_data['country']   #country
+        coor = big_data['location']['coordinates']
+        lat = coor[0]   #latitude
+        long = coor[1]  #longitude
 
-    coor = big_data['location']['coordinates']
-    lat = coor[0]   #latitude
-    long = coor[1]  #longitude
+        weather_ts = big_data['current']['weather']['ts']           #timestamp of weather data
+        humidity = int(big_data['current']['weather']['hu'])        #humidity!
+        icon_code = big_data['current']['weather']['ic']            #icon code for pic
+        atm_pressure = int(big_data['current']['weather']['pr'])    #atm pressure in hPa
+        temp_degc = int(big_data['current']['weather']['tp'])       #deg c temp
+        temp_degf = ((temp_degc)*(9/5)) + 32                        #deg f temp
+        wind_direct = int(big_data['current']['weather']['wd'])     #wind direction in deg
+        wind_speed_ms = int(big_data['current']['weather']['ws'])   #wind speed (m/s)
+        wind_speed_mph = (int(wind_speed_ms)*2.237)                 #wind speed (mph)
 
-    weather_ts = big_data['current']['weather']['ts']           #timestamp of weather data
-    humidity = int(big_data['current']['weather']['hu'])        #humidity!
-    icon_code = big_data['current']['weather']['ic']            #icon code for pic
-    atm_pressure = int(big_data['current']['weather']['pr'])    #atm pressure in hPa
-    temp_degc = int(big_data['current']['weather']['tp'])       #deg c temp
-    temp_degf = ((temp_degc)*(9/5)) + 32                        #deg f temp
-    wind_direct = int(big_data['current']['weather']['wd'])     #wind direction in deg
-    wind_speed_ms = int(big_data['current']['weather']['ws'])   #wind speed (m/s)
-    wind_speed_mph = (int(wind_speed_ms)*2.237)                 #wind speed (mph)
-
-    pollution_ts = big_data['current']['pollution']['ts']       #timestamp of pollution data
-    usaqi = int(big_data['current']['pollution']['aqius'])      #AQI val from EPA
-    usmain = big_data['current']['pollution']['mainus']         #main pollutant -- see scale!
-    cnaqi = int(big_data['current']['pollution']['aqicn'])      #AQI val from China's MEP standard
-    cnmain = big_data['current']['pollution']['maincn']         #main pollutant from MEP metric
+        pollution_ts = big_data['current']['pollution']['ts']       #timestamp of pollution data
+        usaqi = int(big_data['current']['pollution']['aqius'])      #AQI val from EPA
+        usmain = big_data['current']['pollution']['mainus']         #main pollutant -- see scale!
+        cnaqi = int(big_data['current']['pollution']['aqicn'])      #AQI val from China's MEP standard
+        cnmain = big_data['current']['pollution']['maincn']         #main pollutant from MEP metric
 
 
-    print(data['data'])
-    print('------------------------')
-    print((city, state, country, coor, lat, long, weather_ts, humidity, icon_code, atm_pressure, temp_degc, temp_degf, wind_direct, wind_speed_ms, wind_speed_mph, pollution_ts, usaqi, usmain, cnaqi, cnmain))
-    return(data['data'])
+        print(data['data'])
+        print('------------------------')
+        print((city, state, country, coor, lat, long, weather_ts, humidity, icon_code, atm_pressure, temp_degc, temp_degf, wind_direct, wind_speed_ms, wind_speed_mph, pollution_ts, usaqi, usmain, cnaqi, cnmain))
+        return(data['data'])
+
+    except:
+        if data['data']['message']:
+            if data['data']['message'] == 'city_not_found':
+                print("oops, looks like your city can't be found. try another one!")
+                return None
+            else:
+                print("oops, there has been an error — try again!")
+                return None 
+
+
+
 
 prelim()
