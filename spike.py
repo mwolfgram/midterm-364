@@ -54,6 +54,7 @@ def prelim():
     wind_direct = int(big_data['current']['weather']['wd'])     #wind direction in deg
     wind_speed_ms = int(big_data['current']['weather']['ws'])   #wind speed (m/s)
     wind_speed_mph = (int(wind_speed_ms)*2.237)                 #wind speed (mph)
+
     pollution_ts = big_data['current']['pollution']['ts']       #timestamp of pollution data
     usaqi = int(big_data['current']['pollution']['aqius'])      #AQI val from EPA
     usmain = big_data['current']['pollution']['mainus']         #main pollutant -- see scale!
