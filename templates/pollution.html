@@ -3,8 +3,15 @@
 {% block content %}
 <h1>here's your pollution data</h1>
 
+location code legend:
+
+{% for x in city %}
+  <p> {{x}} <p>
+{% endfor %}
+
 {% for x in pollute %}
   <p> {{x}} <p>
 {% endfor %}
+
 
 {% endblock %}
