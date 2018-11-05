@@ -1,12 +1,13 @@
+{% block content %}
 
-
-{% block content1 %}
-
-<form action="{{ url_for('home') }}" method="POST">
-    {{ form.name.label() }}{{ form.name() }}<br>
-    {{ form.submit() }}
-    {{ form.hidden_tag() }}
-</form>
-
+This is the base template of an application that displays Weather and Pollution data from the AirViz API
 
 {% endblock %}
+
+<p>------------</p>
+<h3>Navigation</h3>
+<ul>
+    <li><a href="{{ url_for('index')}}">go to city input form.</a></li>
+    <li><a href="{{ url_for('all_pollution')}}">see all pollution data so far.</a></li>
+    <li><a href="{{ url_for('all_weather')}}">see all weather data so far.</a></li>
+</ul>

@@ -1,0 +1,10 @@
+{% extends 'base.html' %}
+
+{% block content %}
+	<h1>here is all of your weather and pollution data</h1>
+		{% for x in master_list %}
+		<i>city: {{ x[0] }}</i> state: <strong>{{ x[1] }}</strong> country: {{ x[2] }} latitude: {{x[3] }} longitude: {{x[4] }} weather data timestamp: {{x[5] }}  humidity: {{x[6]}}  atmospheric pressure: {{x[8] }}  temperature in c: {{x[9] }} temperature in f: {{x[10] }} wind direction in degrees: {{x[11] }}   wind speed in mph: {{x[13]}}, pollution data timestamp: {{x[14] }}  usaqi: {{x[15]}}   usmain: {{x[16] }} cnaqi: {{x[17] }} cnmain: {{x[18] }} <br>
+		<br>
+		{% endfor %}
+
+{% endblock %}

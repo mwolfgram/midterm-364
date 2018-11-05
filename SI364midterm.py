@@ -8,7 +8,7 @@ import os
 from flask import Flask, render_template, session, redirect, url_for, flash, request
 from flask_wtf import FlaskForm
 from wtforms import StringField, SubmitField, ValidationError # **Note that you may need to import more here! Check out examples that do what you want to figure out what.
-from wtforms.validators import Required # Here, too
+from wtforms.validators import Required, Length
 from flask_sqlalchemy import SQLAlchemy
 import requests
 import json
@@ -51,21 +51,6 @@ def get_or_create_city(city, state, country): #latitude, longitude, country_id1,
 ##### MODELS #####
 ##################
 
-class Location(db.Model):
-
-    __tablename__ = 'location'
-    id = db.Column(db.Integer, primary_key = True)
-    city = db.Column(db.String(100))
-    state = db.Column(db.String(100))
-    country = db.Column(db.String(100))
-    latitude = db.Column(db.Float)
-    longitude = db.Column(db.Float)
-    linker1 = db.Relationship('AirVizWeatherData', backref = 'Location')
-    linker2 = db.Relationship('AirVizPollutionData', backref = 'Location')
-
-    def __repr__(self):
-        return "{}, {} ({})".format(self.city, self.state, self.country) #make this the first element of a tuple output?
-
 class AirVizWeatherData(db.Model):
 
     __tablename__ = "air visual weather data"
@@ -98,6 +83,21 @@ class AirVizPollutionData(db.Model):
     def __repr__(self): #this takes apart the object that is returned and formats it so it's legible
         return "location code: {} | timestamp: {} | AQI from US: {} | main pollutant from US AQI: {} | AQI from CN: {} | main pollutant from CN AQI: {} | ".format(self.country_id2, self.pollution_time, self.us_aqi, self.us_main, self.cn_aqi, self.cn_main)
 
+class Location(db.Model):
+
+    __tablename__ = 'location'
+    id = db.Column(db.Integer, primary_key = True)
+    city = db.Column(db.String(100))
+    state = db.Column(db.String(100))
+    country = db.Column(db.String(100))
+    latitude = db.Column(db.Float)
+    longitude = db.Column(db.Float)
+    linker1 = db.relationship('AirVizWeatherData', backref = 'Location')
+    linker2 = db.relationship('AirVizPollutionData', backref = 'Location')
+
+    def __repr__(self):
+        return "{}, {} ({})".format(self.city, self.state, self.country) #make this the first element of a tuple output?
+
 #redo the whole "location code" thing so an actual country name is displayed
 #^ or maybe just format the country name into the html?? who know, it shouldn't be an awful fix either way
 
@@ -108,12 +108,13 @@ class AirVizPollutionData(db.Model):
 class CityForm(FlaskForm):
     city = StringField("enter a city somewhere in the US or China: ", validators = [Required(), Length(max = 280)])
     state = StringField("enter the state/province of your city: ", validators = [Required(), Length(max = 64)])
-    country = StringField("enter the country your city is in (if it's in the united states, you must type 'USA' — if in China, just type 'China'): ", validators = [Required(), Length(max = 3)]) #link to list/page? of A3 codes??
+    country = StringField("enter the country your city is in (if it's in the united states, you must type 'USA' — if in China, just type 'China'): ", validators = [Required(), Length(max = 15)]) #link to list/page? of A3 codes??
+    submit = SubmitField("submit")
 
     def validate_username(self, field): #making sure no idiot says africa is a country
         result = field.data
         split_display = result.split(' ')
-        if "China" and "United States" not in split_display: #***how to isolate the country for this validator?
+        if "China" and "USA" not in split_display: #***how to isolate the country for this validator?
             raise ValidationError("your city must be in either the united states or china!")
 
     def validate_display_name(self, field): #custom validation - the output can't be more than 7 words
@@ -126,11 +127,18 @@ class CityForm(FlaskForm):
 ###### VIEW FXNS ######
 #######################
 
-@app.route('/')
-def home():
+master_list = [] #either make a list to send to helper functions or idk --***make a helper function for duplicate verification?
+#keep this outside so it can be referenced by all routes!
+@app.route('/', methods = ['GET', 'POST'])
+def index():
     form = CityForm(request.form) # User should be able to enter name after name and each one will be saved, even if it's a duplicate! Sends data with GET
-    master_list = [] #either make a list to send to helper functions or idk --***make a helper function for duplicate verification?
-    if form.validate_on_submit() and request.method == 'POST':
+    return render_template('index.html',form=form)
+
+@app.route('/results', methods = ['GET', 'POST'])
+def results():
+    form = CityForm(request.form)
+    if request.method == 'POST' and form.validate_on_submit():
+
 
         #what is this stuff??
         # if form.validate_on_submit():
@@ -141,23 +149,24 @@ def home():
         #     return redirect(url_for('all_names'))
 
         #.format everything in the link!!
-        city_test = form.city.data #get this stuff from the form
-        state_test = form.state.data
-        country_test = form.country.data
-        #***reroute to list of cities supported in the country?
-        #what happens if the country isn't supported?
-
-        baseurl = "http://api.airvisual.com/v2/city?city={}&state={}&country={}&key={}".format(city_test, state_test, country_test, secrets.api_secret)
-        # print(baseurl)
-
-        #querystring = {"city":"Beijing","state":"Beijing","country":"China","key": "ih759G8bZXogKrbAA"}
-
-        response = requests.get(baseurl) #, params=querystring)
-        data = json.loads(response.text)
-        big_data = data['data']
-
-        ### individual elements from response
         try:
+            city_test = form.city.data #get this stuff from the form
+            state_test = form.state.data
+            country_test = form.country.data
+            #***reroute to list of cities supported in the country?
+            #what happens if the country isn't supported?
+
+            baseurl = "http://api.airvisual.com/v2/city?city={}&state={}&country={}&key={}".format(city_test, state_test, country_test, secrets.api_secret)
+            # print(baseurl)
+
+            #querystring = {"city":"Beijing","state":"Beijing","country":"China","key": "ih759G8bZXogKrbAA"}
+
+            response = requests.get(baseurl) #, params=querystring)
+            data = json.loads(response.text)
+            big_data = data['data']
+
+            ### individual elements from response
+
             city = big_data['city']         #city name
             state = big_data['state']       #state name
             country = big_data['country']   #country
@@ -183,52 +192,57 @@ def home():
             cnmain = big_data['current']['pollution']['maincn']         #main pollutant from MEP metric
 
 
-            print(data['data'])
-            print('------------------------')
-            print((city, state, country, coor, lat, long, weather_ts, humidity, icon_code, atm_pressure, temp_degc, temp_degf, wind_direct, wind_speed_ms, wind_speed_mph, pollution_ts, usaqi, usmain, cnaqi, cnmain))
-            return(data['data'])
+                # print(data['data'])
+                # print('------------------------')
+                # print((city, state, country, coor, lat, long, weather_ts, humidity, icon_code, atm_pressure, temp_degc, temp_degf, wind_direct, wind_speed_ms, wind_speed_mph, pollution_ts, usaqi, usmain, cnaqi, cnmain))
+                #return(data['data'])
 
-        except: #***TRANSLATE THIS TO HELPER FUNCTION! HOW TO RETURN IT IF IT'S NOT WORKING
-            if data['data']['message']:
-                if data['data']['message'] == 'city_not_found':
-                    print("oops, looks like your city can't be found. try another one!")
-                    return None #flash error message instead?
-                else:
-                    print("oops, there has been an error — try again!")
-                    return None #flash error message instead?
+            if get_or_create_city(city, state, country) == True:
+                pass #are you supposed to be returning data from all three models here now?
 
+            if get_or_create_city(city, state, country) == False:
 
+                city = Location(city = city, state = state, country = country, latitude = lat, longitude = long) #wait is there fkey
+                db.session.add(city)
+                db.session.commit()
+                #hmm this could be a problematic part - the whole city.id thing if the fkey is already established
+                weather = AirVizWeatherData(country_id1 = city.id, weather_time = weather_ts, humidity = humidity, icon_code = icon_code, atm_pressure = atm_pressure, temp_degc = temp_degc, temp_degf = temp_degf, wind_direct = wind_direct, wind_speed_ms = wind_speed_ms, wind_speed_mph = wind_speed_mph)
+                db.session.add(weather)
+                db.session.commit()
+
+                pollution = AirVizPollutionData(country_id2 = city.id, pollution_time = pollution_ts, us_aqi = usaqi, us_main = usmain, cn_aqi = cnaqi, cn_main = cnmain)
+                db.session.add(pollution)
+                db.session.commit() #only one commit?
+
+            master_list.append((city, state, country, lat, long, weather_ts, humidity, icon_code, atm_pressure, temp_degc, temp_degf, wind_direct, wind_speed_ms, wind_speed_mph, pollution_ts, usaqi, usmain, cnaqi, cnmain))
+            mlist1 = master_list[0:5] #return this in the render_template (????)
+            ### oo wait use mlist 1 and 2
+            #return render_template('results.html', master_list = master_list)
+            return redirect(url_for('index')) #maybe this is it, chief?
+        except:
+            flash("!!!! ERRORS IN FORM SUBMISSION! try again! ")
+            return redirect(url_for('index'))
+
+#do a ___.query.all(city = city) below (in a different route) to return things to the templates bc it has to be from the database!
+#do one for weather and one for pollution, then change the long part to results
     errors = [v for v in form.errors.values()]
     if len(errors) > 0:
         flash("!!!! ERRORS IN FORM SUBMISSION - " + str(errors))
-    return render_template('base.html',form=form)#do a url_for here somewhere?
-    #***redirect(url_for('index'))
-    if get_or_create_city(city, state, country) == True:
-        pass #are you supposed to be returning data from all three models here now?
-
-    if get_or_create_city(city, state, country) == False:
-
-        city = Location(city = city, state = state, country = country, latitude = latitude, longitude = longitude) #wait is there fkey
-        db.session.add(city)
-        db.session.commit()
-
-        weather = AirVizWeatherData(weather_ts = weather_time, humidity = humidity, icon_code = icon_code, atm_pressure = atm_pressure, temp_degc = temp_degc, temp_degf = temp_degf, wind_direct = wind_direct, wind_speed_ms = wind_speed_ms, wind_speed_mph = wind_speed_mph)
-        db.session.add(weather)
-        db.session.commit()
-
-        pollution = AirVizPollutionData()
-
-# return city ------ move this up a bit in a little
-
-@app.route('/names')
-def all_names():
-    names = Name.query.all()
-    return render_template('name_example.html',names=names)
+        return redirect(url_for('index'))
 
 
 
+@app.route('/allPollution')
+def all_pollution():
+    pollute = AirVizPollutionData.query.all()
+    return render_template('pollution.html', pollute = pollute) #change template, add on 1 here
 
-#error handling -- taken from HW3 -- put these above? does it matter?
+@app.route('/allWeather')
+def all_weather():
+    weather = AirVizWeatherData.query.all()
+    return render_template('weather.html', weather = weather) #change template, add on 2 here
+
+#error handling -- taken from HW3
 
 @app.errorhandler(404)
 def page_not_found(e):

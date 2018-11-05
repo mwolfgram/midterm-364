@@ -1,0 +1,10 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h1>here's your weather data</h1>
+
+{% for x in weather %}
+  <p> {{x}} <p>
+{% endfor %}
+
+{% endblock %}

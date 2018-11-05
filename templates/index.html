@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="page-header">
+    <h1>hello! this is a program that returns EPA and MEP data from the AirViz API for cities in China or the United States </h1>
+</div>
+
+<div>
+<form action="{{ url_for('results') }}" method="POST">
+	{{ form.hidden_tag() }}
+	{{ form.city.label }} {{ form.city() }}
+	{{ form.state.label }} {{ form.state() }}
+    {{ form.country.label }} {{ form.country() }}
+	{{ form.submit() }}
+</form>
+</div>
+
+<br>
+<strong><p>NOTE: you must choose a city in the US or China.</strong> <i>if your city is in the US, type "USA" as the country; if it's in China, just type "China"</i></p><br>
+
+<div>
+{% for message in get_flashed_messages() %}
+    <strong>{{ message }}</strong>
+{% endfor %}
+</div>
+
+{% endblock %}
